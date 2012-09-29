@@ -1,0 +1,250 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<!-- SAMPLER -->
+
+	<bean id="sigar" class="org.hyperic.sigar.Sigar"></bean>
+
+	<bean id="fileOutput" class="org.godzzo.simmon.sampler.output.DurationFileOutput">
+		<property name="openPath" value="./out/open" />
+		<property name="closedPath" value="./out/closed" />
+		<property name="archivePath" value="./out/archive" />
+
+		<property name="openDuration">
+			<bean class="org.godzzo.simmon.util.DurationBean">
+				<property name="seconds" value="30" />
+			</bean>
+		</property>
+	</bean>
+
+	<bean name="memFreeSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.MemSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="mem.free" />
+				<entry key="type" value="Free" />
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="memFreeTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="memFreeSampler" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="cpuPercCombined"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.CpuSampler" />
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="cpuperc.combined" />
+				<entry key="type" value="Combined" />
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+	
+	<bean id="cpuPercCombinedTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="cpuPercCombined" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+	
+	<bean name="driveAvailSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.FileSystemSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="drv.avail" />
+				<entry key="type" value="Avail" />
+				<entry key="drive" value="/dev/sda2" />
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="driveAvailSamplerTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="driveAvailSampler" />
+		<property name="repeatInterval" value="15000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+	
+	<!-- MERGE -->
+
+	<bean name="merger"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.merge.HourFileMerge" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/closed" />
+				<entry key="writePath" value="./out/collect" />
+				
+				<entry key="remove" value="true" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="mergeTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="merger" />
+		<property name="repeatInterval" value="60000" />
+		<property name="startDelay" value="10000" />
+	</bean>
+
+	<!-- CHART -->
+
+	<bean id="chart" class="org.godzzo.simmon.chart.SimpleTimeLineChart"/>
+	
+	<bean name="hourChart"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.chart.MakeHourChart" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/collect" />
+				<entry key="chart" value-ref="chart" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="hourChartTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="hourChart" />
+		<property name="repeatInterval" value="180000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+	
+	<bean name="dayChart"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.chart.MakeYesterdayChart" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/collect" />
+				<entry key="chart" value-ref="chart" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="dayChartTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="dayChart" />
+		<property name="cronExpression" value="0 0/35 * * * ?" />
+		<property name="startDelay" value="1500" />
+	</bean>
+
+	<!-- SENDER -->
+
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="host" value="smtp.gmail.com" />
+		<property name="port" value="587" />
+		<property name="username" value="user@gmail.com" />
+		<property name="password" value="password" />
+
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.smtp.auth">true</prop>
+				<prop key="mail.smtp.starttls.enable">true</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean name="dataSender"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.send.DataSenderByMail" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/archive" />
+				
+				<entry key="mailSender" value-ref="mailSender" />
+				<entry key="fromEmail" value="user@gmail.com" />
+				<entry key="toEmail" value="user@gmail.com" />
+				<entry key="hostName" value="tester.com" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="dataSenderTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="dataSender" />
+		<property name="repeatInterval" value="900000" />
+		<property name="startDelay" value="5000" />
+	</bean>
+
+	<!-- RECEIVER -->
+	
+	<bean id="receiver" class="org.springframework.integration.mail.Pop3MailReceiver">
+		<constructor-arg value="pop.gmail.com" /> <!-- host -->
+<!-- 		<constructor-arg value="995" /> --> <!-- port -->
+		<constructor-arg value="user@gmail.com" /> <!-- username -->
+		<constructor-arg value="password" /> <!-- password -->
+
+		<property name="shouldDeleteMessages" value="true"/>
+
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.pop3.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+				<prop key="mail.pop3.socketFactory.fallback">false</prop>
+<!-- 				<prop key="mail.pop3.port">995</prop> --> <!-- Not needed too :) -->
+				<prop key="mail.pop3.socketFactory.port">995</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean name="dataReceiver"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.receive.DataReceiverByMail" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="closedPath" value="./out/closed" />
+				<entry key="workPath" value="./out/received" />
+				
+				<entry key="receiver" value-ref="receiver" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="dataReceiverTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="dataReceiver" />
+		<property name="repeatInterval" value="600000" />
+		<property name="startDelay" value="35000" />
+	</bean>
+	
+	<!-- SCHEDULING -->
+	
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="memFreeTrigger" />
+				<ref bean="cpuPercCombinedTrigger" />
+<!-- 				<ref bean="driveAvailSamplerTrigger" /> -->
+				
+				<ref bean="mergeTrigger" />
+				
+				<ref bean="dataSenderTrigger" />
+				
+				<ref bean="dataReceiverTrigger" />
+				
+				<ref bean="hourChartTrigger" />
+				<ref bean="dayChartTrigger" />
+			</list>
+		</property>
+	</bean>
+</beans>

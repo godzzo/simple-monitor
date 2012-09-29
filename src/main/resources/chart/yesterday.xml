@@ -1,0 +1,34 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<bean id="chart" class="org.godzzo.simmon.chart.SimpleTimeLineChart"/>
+	
+	<bean name="yesterdayChart"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.chart.MakeYesterdayChart" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./data/collect" />
+				<entry key="chart" value-ref="chart" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="trigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="yesterdayChart" />
+		<property name="repeatInterval" value="180000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="trigger" />
+			</list>
+		</property>
+	</bean>
+</beans>

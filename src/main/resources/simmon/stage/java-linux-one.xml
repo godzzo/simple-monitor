@@ -1,0 +1,141 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<!-- SAMPLER RESOURCE -->
+	<bean id="sigar" class="org.hyperic.sigar.Sigar"></bean>
+
+	<!-- 
+	<bean id="fileOutput" class="org.godzzo.simmon.sampler.output.DurationFileOutput">
+		<property name="openPath" value="./data/open" />
+		<property name="closedPath" value="./data/closed" />
+
+		<property name="openDuration">
+			<bean class="org.godzzo.simmon.util.DurationBean">
+				<property name="seconds" value="30" />
+			</bean>
+		</property>
+	</bean>
+	 -->
+
+	<bean id="fileOutput" class="org.godzzo.simmon.sampler.output.SizedFileOutput">
+		<property name="openPath" value="./data/open" />
+		<property name="closedPath" value="./data/closed" />
+		<property name="archivePath" value="./data/archive" />
+		
+		<property name="biggerThan" value="256" />
+	</bean>
+
+	<!-- SAMPLER -->
+
+	<bean name="jvmUsedSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.JvmSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="jvm.used" />
+				<entry key="type" value="Used" />
+				
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="jvmUsedTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="jvmUsedSampler" />
+		<property name="repeatInterval" value="3000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="jvmTotalSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.JvmSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="jvm.total" />
+				<entry key="type" value="Total" />
+				
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="jvmTotalTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="jvmTotalSampler" />
+		<property name="repeatInterval" value="3000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<!-- MERGE -->
+
+	<bean name="merger"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.merge.HourFileMerge" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./data/closed" />
+				<entry key="writePath" value="./data/collect" />
+
+				<entry key="remove" value="true" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="mergeTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="merger" />
+		<property name="repeatInterval" value="30000" />
+		<property name="startDelay" value="10000" />
+	</bean>
+
+	<!-- CHART -->
+
+	<bean id="chart" class="org.godzzo.simmon.chart.SimpleTimeLineChart" />
+
+	<bean id="wideChart" class="org.godzzo.simmon.chart.SimpleTimeLineChart" >
+		<property name="width" value="1024" />
+	</bean>
+
+	<bean name="hourChart"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.chart.MakeHourChart" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./data/collect" />
+				<entry key="chart" value-ref="wideChart" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="hourChartTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="hourChart" />
+		<property name="repeatInterval" value="60000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<!-- SCHEDULING -->
+
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="jvmUsedTrigger" />
+				<ref bean="jvmTotalTrigger" />
+
+				<ref bean="mergeTrigger" />
+
+				<ref bean="hourChartTrigger" />
+			</list>
+		</property>
+	</bean>
+
+</beans>

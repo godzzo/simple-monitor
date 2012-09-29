@@ -1,0 +1,34 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<bean name="merger"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.merge.HourFileMerge" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/sampler/base/closed" />
+				<entry key="writePath" value="./out/sampler/base/hours" />
+				
+				<entry key="remove" value="true" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="mergeTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="merger" />
+		<property name="repeatInterval" value="60000" />
+		<property name="startDelay" value="10000" />
+	</bean>
+
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="mergeTrigger" />
+			</list>
+		</property>
+	</bean>
+</beans>

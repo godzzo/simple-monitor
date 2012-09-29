@@ -1,0 +1,144 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+	<!-- OLD use before 2.0: JobDetailBean  -->
+	<!-- NEW : JobDetailFactoryBean -->
+	<bean name="normalJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.quartz.test.bean.NormalJob" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="shortName" value="Joe" />
+			</map>
+		</property>
+	</bean>
+	
+	
+	<bean id="justABean" class="org.godzzo.quartz.test.bean.JustABean"/>
+		
+	<bean id="runJustABean"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="justABean" />
+		<property name="targetMethod" value="doingAScheduledJobToo" />
+	</bean>
+
+	<!-- OLD: SimpleTriggerBean, NEW: SimpleTriggerFactoryBean -->
+	<bean id="every5Seconds" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="normalJob" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+	<bean id="every7Seconds" class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="runJustABean" />
+		<property name="repeatInterval" value="7000" />
+		<property name="startDelay" value="1500" />
+	</bean>
+	
+	<!-- http://en.wikipedia.org/wiki/CRON_expression#CRON_expression -->
+	<!-- http://quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger -->
+	<bean id="whenEverySecondMinute" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="normalJob" />
+		
+		<property name="cronExpression" value="0 */2 * * * ?" />
+		<property name="startDelay" value="1500" />
+ 	</bean>
+
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="every5Seconds" />
+				<ref bean="every7Seconds" />
+				<ref bean="whenEverySecondMinute" />
+			</list>
+		</property>
+		<property name="quartzProperties">
+			<props>
+				<!-- ThreadPool 
+				<prop key="org.quartz.threadPool.class">org.quartz.simpl.SimpleThreadPool</prop>
+				<prop key="org.quartz.threadPool.threadCount">5</prop>
+				<prop key="org.quartz.threadPool.threadPriority">5</prop>
+				
+				http://forum.springsource.org/archive/index.php/t-10000.html
+				http://quartz-scheduler.org/documentation/quartz-2.x/quick-start
+				http://quartz-scheduler.org/documentation/quartz-2.x/configuration/
+				http://quartz-scheduler.org/documentation/quartz-2.x/configuration/ConfigThreadPool
+				-->
+				
+				<prop key="org.quartz.threadPool.threadCount">3</prop>
+				
+				<!-- Scheduler 
+				<prop key="org.quartz.scheduler.instanceName">MyScheduler</prop>
+				-->
+
+				<!-- Job store 
+				<prop key="org.quartz.jobStore.misfireThreshold">60000</prop>
+				<prop key="org.quartz.jobStore.class">org.quartz.impl.jdbcjobstore.JobStoreTX</prop>
+				<prop key="org.quartz.jobStore.driverDelegateClass">$&#123;jdbc.quartz.delegateClassName&#125;</prop>
+				<prop key="org.quartz.jobStore.useProperties">false</prop>
+				-->
+				
+				<!-- Uncomment the following if you want to use a separate data source -->
+				<!-- <prop key="org.quartz.jobStore.dataSource">quartzDS</prop> -->
+				<!-- DataSource -->
+				<!--
+				<prop key="org.quartz.dataSource.quartzDS.driver">$&#123;jdbc.driverClassName&#125;</prop>
+				<prop key="org.quartz.dataSource.quartzDS.URL">$&#123;jdbc.url&#125;</prop>
+				<prop key="org.quartz.dataSource.quartzDS.user">$&#123;jdbc.username&#125;</prop>
+				<prop key="org.quartz.dataSource.quartzDS.password">$&#123;jdbc.password&#125;</prop>
+				<prop key="org.quartz.dataSource.quartzDS.maxConnections">5</prop>
+				-->
+				
+<!-- 				<prop key="org.quartz.jobStore.selectWithLockSQL">SELECT * FROM &#123;0&#125;LOCKS UPDLOCK WHERE LOCK_NAME = ?</prop> -->
+				
+				<!-- Plugins 
+				<prop key="org.quartz.plugin.shutdownhook.class">org.quartz.plugins.management.ShutdownHookPlugin</prop>
+				<prop key="org.quartz.plugin.shutdownhook.cleanShutdown">true</prop>
+				<prop key="org.quartz.plugin.triggHistory.class">org.quartz.plugins.history.LoggingTriggerHistoryPl ugin</prop>
+				<prop key="org.quartz.plugin.triggHistory.triggerFiredMessage">Trigger &#123;1&#125;.&#123;0&#125; fired job &#123;6&#125;.&#123;5&#125; at&#58; &#123;4, date, HH&#58;mm&#58;ss MM/dd/yyyy&#125;</prop>
+				<prop key="org.quartz.plugin.triggHistory.triggerCompleteMess age">Trigger &#123;1&#125;.&#123;0&#125; completed firing job &#123;6&#125;.&#123;5&#125; at &#123;4, date, HH&#58;mm&#58;ss MM/dd/yyyy&#125; with resulting trigger instruction code&#58; &#123;9&#125;</prop>
+				-->
+			</props>
+		</property>
+	</bean>
+</beans>
+<!-- 
+Examples
+Here are some full examples:
+
+	**Expression**				**Meaning**
+	0 0 12 * * ?				Fire at 12pm (noon) every day
+	0 15 10 ? * *				Fire at 10:15am every day
+	0 15 10 * * ?				Fire at 10:15am every day
+	0 15 10 * * ? *				Fire at 10:15am every day
+	0 15 10 * * ? 2005			Fire at 10:15am every day during the year 2005
+	0 * 14 * * ?				Fire every minute starting at 2pm and ending at 2:59pm, every day
+	0 0/5 14 * * ?				Fire every 5 minutes starting at 2pm and ending at 2:55pm, every day
+	0 0/5 14,18 * * ?			Fire every 5 minutes starting at 2pm and ending at 2:55pm, AND fire every 5 minutes starting at 6pm and ending at 6:55pm, every day
+	0 0-5 14 * * ?				Fire every minute starting at 2pm and ending at 2:05pm, every day
+	0 10,44 14 ? 3 WED			Fire at 2:10pm and at 2:44pm every Wednesday in the month of March.
+	0 15 10 ? * MON-FRI			Fire at 10:15am every Monday, Tuesday, Wednesday, Thursday and Friday
+	0 15 10 15 * ?				Fire at 10:15am on the 15th day of every month
+	0 15 10 L * ?				Fire at 10:15am on the last day of every month
+	0 15 10 L-2 * ?				Fire at 10:15am on the 2nd-to-last last day of every month
+	0 15 10 ? * 6L				Fire at 10:15am on the last Friday of every month
+	0 15 10 ? * 6L				Fire at 10:15am on the last Friday of every month
+	0 15 10 ? * 6L 2002-2005	Fire at 10:15am on every last friday of every month during the years 2002, 2003, 2004 and 2005
+	0 15 10 ? * 6#3				Fire at 10:15am on the third Friday of every month
+	0 0 12 1/5 * ?				Fire at 12pm (noon) every 5 days every month, starting on the first day of the month.
+	0 11 11 11 11 ?				Fire every November 11th at 11:11am.
+	
+	Pay attention to the effects of '?' and '*' in the day-of-week and day-of-month fields!
+
+INFO : org.quartz.core.QuartzScheduler - Scheduler meta-data: Quartz Scheduler (v2.1.6) 'org.springframework.scheduling.quartz.SchedulerFactoryBean#0' with instanceId 'NON_CLUSTERED'
+  Scheduler class: 'org.quartz.core.QuartzScheduler' - running locally.
+  NOT STARTED.
+  Currently in standby mode.
+  Number of jobs executed: 0
+  Using thread pool 'org.quartz.simpl.SimpleThreadPool' - with 10 threads.
+  Using job-store 'org.quartz.simpl.RAMJobStore' - which does not support persistence. and is not clustered.
+
+
+ -->
+ 

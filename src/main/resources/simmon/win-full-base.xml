@@ -1,0 +1,319 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+
+	<!-- SAMPLER RESOURCE -->
+
+	<bean id="sigar" class="org.hyperic.sigar.Sigar"></bean>
+
+	<bean id="jmxConnector" class="org.godzzo.simmon.tool.JmxConnnectorBean">
+		<property name="connectionUrl" value="service:jmx:rmi:///jndi/rmi://:9999/jmxrmi" />
+		<property name="userName" value="username" />
+		<property name="userPass" value="password" />
+	</bean>
+
+	<bean id="fileOutput" class="org.godzzo.simmon.sampler.output.DurationFileOutput">
+		<property name="openPath" value="./out/sampler/base/open" />
+		<property name="closedPath" value="./out/sampler/base/closed" />
+
+		<property name="openDuration">
+			<bean class="org.godzzo.simmon.util.DurationBean">
+				<property name="seconds" value="90" />
+			</bean>
+		</property>
+	</bean>
+
+	<!-- SAMPLER -->
+
+	<bean name="memFreeSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.MemSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="mem.free" />
+				<entry key="type" value="Free" />
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="memFreeTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="memFreeSampler" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="cpuPercCombined"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.CpuSampler" />
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="cpuperc.combined" />
+				<entry key="type" value="Combined" />
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="cpuPercCombinedTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="cpuPercCombined" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="driveAvailSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.FileSystemSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="drv.avail" />
+				<entry key="type" value="Avail" />
+				<entry key="drive" value="C:\" />
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="driveAvailSamplerTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="driveAvailSampler" />
+		<property name="repeatInterval" value="15000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="memJavaWSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.ProcSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="javaw.mem" />
+				<entry key="type" value="Resident" />
+				<entry key="proc" value="javaw" />
+
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="memJavaWTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="memJavaWSampler" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="threadJavaWSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.ProcSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="javaw.thread" />
+				<entry key="type" value="Threads" />
+				<entry key="proc" value="javaw" />
+
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="threadJavaWTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="threadJavaWSampler" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="procCountSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.ProcSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="proc.count" />
+				<entry key="type" value="Process" />
+				<entry key="proc" value="ALL" />
+
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="procCountTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="procCountSampler" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="threadCountSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.ProcSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="thread.count" />
+				<entry key="type" value="Threads" />
+				<entry key="proc" value="ALL" />
+
+				<entry key="output" value-ref="fileOutput" />
+				<entry key="sigar" value-ref="sigar" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="threadCountTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="threadCountSampler" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="requestCountSampler"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.sampler.JmxSampler" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="name" value="request.count" />
+				<entry key="output" value-ref="fileOutput" />
+
+				<entry key="connector" value-ref="jmxConnector" />
+				<entry key="objectName" value="Catalina:type=GlobalRequestProcessor,name=jk-8010" />
+				<!-- Catalina:type=GlobalRequestProcessor,name=&quot;http-bio-8080&quot; -->
+			</map>
+		</property>
+	</bean>
+
+	<bean id="requestCountTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="requestCountSampler" />
+		<property name="repeatInterval" value="5000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<!-- MERGE -->
+
+	<bean name="merger"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.merge.HourFileMerge" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/sampler/base/closed" />
+				<entry key="writePath" value="./out/sampler/base/hours" />
+
+				<entry key="remove" value="true" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="mergeTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="merger" />
+		<property name="repeatInterval" value="60000" />
+		<property name="startDelay" value="10000" />
+	</bean>
+
+	<!-- CHART -->
+
+	<bean id="chart" class="org.godzzo.simmon.chart.SimpleTimeLineChart" />
+
+	<bean name="hourChart"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.chart.MakeHourChart" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/sampler/base/hours" />
+				<entry key="chart" value-ref="chart" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="hourChartTrigger"
+		class="org.springframework.scheduling.quartz.SimpleTriggerFactoryBean">
+		<property name="jobDetail" ref="hourChart" />
+		<property name="repeatInterval" value="180000" />
+		<property name="startDelay" value="1000" />
+	</bean>
+
+	<bean name="dayChart"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.chart.MakeYesterdayChart" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="sourcePath" value="./out/sampler/base/hours" />
+				<entry key="chart" value-ref="chart" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="dayChartTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="dayChart" />
+		<property name="cronExpression" value="0 0/35 * * * ?" />
+		<property name="startDelay" value="1500" />
+	</bean>
+
+	<!-- TOOL -->
+
+	<bean name="resetRequestCounters"
+		class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+		<property name="jobClass" value="org.godzzo.simmon.tool.JmxOperation" />
+
+		<property name="jobDataAsMap">
+			<map>
+				<entry key="connector" value-ref="jmxConnector" />
+				<entry key="objectName" value="Catalina:type=GlobalRequestProcessor,name=jk-8010" />
+				<!-- Catalina:type=GlobalRequestProcessor,name=&quot;http-bio-8080&quot; -->
+				<entry key="operationName" value="resetCounters" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="resetRequestCountersTrigger"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="resetRequestCounters" />
+		<property name="cronExpression" value="59 23 * * * ?" />
+		<property name="startDelay" value="1500" />
+	</bean>
+
+	<!-- SCHEDULING -->
+
+	<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="memFreeTrigger" />
+				<ref bean="cpuPercCombinedTrigger" />
+				<ref bean="driveAvailSamplerTrigger" />
+				<ref bean="memJavaWTrigger" />
+				<ref bean="threadJavaWTrigger" />
+				<ref bean="procCountTrigger" />
+				<ref bean="threadCountTrigger" />
+				<ref bean="requestCountTrigger" />
+
+				<ref bean="mergeTrigger" />
+
+				<ref bean="hourChartTrigger" />
+				<ref bean="dayChartTrigger" />
+
+				<ref bean="resetRequestCountersTrigger" />
+			</list>
+		</property>
+	</bean>
+</beans>
