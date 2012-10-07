@@ -21,12 +21,12 @@ abstract public class FileMerge extends ScanFileNameItemJob {
 	protected void checkParameters() {
 		Assert.assertNotNull("WritePath is null!", getWritePath());
 	}
-	
+
 	@Override
 	protected void invokeItem(String name, File item) throws Exception {
 		write(name, item);
 	}
-	
+
 	protected void write(String name, File item) throws Exception {
 		BufferedReader reader = new BufferedReader(new FileReader(item));
 		String line;
@@ -34,11 +34,19 @@ abstract public class FileMerge extends ScanFileNameItemJob {
 		while ((line = reader.readLine()) != null) {
 			String[] values = line.split(";");
 
-			DateTime time = new DateTime(new Long(values[0]));
+			try {
+				Long timestamp = new Long(values[0]);
 
-			log.debug("TIME: " + time.toString());
+				DateTime time = new DateTime(timestamp);
 
-			writeValue(name, time, values[1], line);
+				log.debug("TIME: " + time.toString());
+
+				writeValue(name, time, values[1], line);
+			} catch (Exception e) {
+				log.error(String.format(
+						"Error parsing line [%s] inf file [%s]!", line,
+						item.getCanonicalPath()), e);
+			}
 		}
 
 		reader.close();
