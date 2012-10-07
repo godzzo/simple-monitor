@@ -98,7 +98,13 @@ public class FileOutput implements Output {
 
 		copyToArchive(fileName, name, handler);
 
-		FileUtils.moveFile(handler.getFile(), new File(path));
+		File destFile = new File(path);
+		
+		if (destFile.exists()) {
+			destFile.delete();
+		}
+		
+		FileUtils.moveFile(handler.getFile(), destFile);
 
 		data.remove(name);
 	}
