@@ -13,7 +13,7 @@ import org.junit.Assert;
 
 public class FileTimeSeries {
 	private SimpleDateFormat format;
-	
+
 	public SimpleDateFormat getFormat() {
 		return format;
 	}
@@ -27,20 +27,20 @@ public class FileTimeSeries {
 
 	public TimeSeries load() throws Exception {
 		Assert.assertNotNull(getFile());
-		
+
 		return load(getFile());
 	}
-	
+
 	public TimeSeries load(String file) throws Exception {
 		Assert.assertNotNull(getTitle());
-		
+
 		TimeSeries series = new TimeSeries(getTitle());
-		
+
 		load(file, series);
-		
+
 		return series;
 	}
-	
+
 	public void load(String file, TimeSeries series) throws Exception {
 		BufferedReader reader = new BufferedReader(new FileReader(file));
 		String line;
@@ -51,10 +51,10 @@ public class FileTimeSeries {
 			try {
 				series.add(new Second(parseDate(vals[0])), parseValue(vals[1]));
 			} catch (SeriesException e) {
-				Log.error(file+" / "+e.getMessage());
+				Log.error(file + " / " + e.getMessage());
 			}
 		}
-		
+
 		reader.close();
 	}
 
@@ -66,7 +66,19 @@ public class FileTimeSeries {
 	}
 
 	private Double parseValue(String value) throws Exception {
-		return new Double(value);
+		if (value.startsWith("#")) {
+			return parseValueCode(value);
+		} else {
+			return new Double(value);
+		}
+	}
+
+	private Double parseValueCode(String code) {
+		if (code.equals("#E")) {
+			return null;
+		} else {
+			throw new RuntimeException("Unknown Value Code: " + code);
+		}
 	}
 
 	public String getTitle() {
