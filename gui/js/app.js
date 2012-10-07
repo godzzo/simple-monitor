@@ -55,7 +55,7 @@ function LoadDayImages(strType, objNow) {
 			}
 		});
 		
-		arrImages.sort(function (prev, next) { return prev.pos-next.pos; });
+		arrImages.sort(function (prev, next) { return next.pos-prev.pos; });
 		
 		ShowDayImages("tdDay", arrImages);
 	});
@@ -87,7 +87,7 @@ function LoadHourImages(strType, objNow) {
 			}
 		});
 		
-		arrImages.sort(function (prev, next) { return prev.pos-next.pos; });
+		arrImages.sort(function (prev, next) { return next.pos-prev.pos; });
 		
 		ShowHourImages("tdHour", arrImages);
 	});
